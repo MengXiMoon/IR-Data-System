@@ -1,0 +1,45 @@
+# ============================================================
+# 招聘数据智能系统 — 配置文件
+# ============================================================
+
+# ---- 数据路径 ----
+data:
+  raw_path: "data/raw/"
+  processed_path: "data/processed/"
+  text_features_path: "data/text_features/"
+
+# ---- 模型路径 ----
+models:
+  save_dir: "models/"
+  kmeans_model: "models/kmeans.pkl"
+  nn_classifier: "models/nn_classifier.pt"
+
+# ---- NLP 参数 ----
+nlp:
+  stopwords_path: "data/stopwords.txt"
+  tfidf_max_features: 5000
+
+# ---- 聚类参数 ----
+clustering:
+  n_clusters: 5
+  random_state: 42
+
+# ---- 神经网络参数 ----
+neural_network:
+  input_dim: 5000
+  hidden_dim: 256
+  num_classes: 5
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+
+# ---- LLM 配置 ----
+llm:
+  model: "gpt-3.5-turbo"
+  temperature: 0.7
+  max_tokens: 1024
+
+# ---- Streamlit 配置 ----
+streamlit:
+  page_title: "招聘数据智能系统"
+  layout: "wide"
