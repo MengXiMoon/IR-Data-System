@@ -1,6 +1,6 @@
 """将清洗后的 CSV 数据导入 MySQL"""
 
-import getpass
+import os
 import pandas as pd
 import pymysql
 
@@ -28,24 +28,24 @@ COLUMN_MAP = {
     "所属行业": "industry",
     "城市": "city",
     "区域": "district",
+    "数据来源": "source",
 }
 
 
 def import_csv_to_mysql(csv_path: str):
     """读取 CSV 并逐行插入 MySQL"""
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
-    df = df.where(pd.notna(df), None)  # NaN → None → SQL NULL
-
     # 重命名列
     df.rename(columns=COLUMN_MAP, inplace=True)
-    columns = list(COLUMN_MAP.values())
+    # 只保留 CSV 中实际存在的列
+    columns = [v for k, v in COLUMN_MAP.items() if v in df.columns]
     df = df[columns]
 
     conn = pymysql.connect(
         host="localhost",
         port=3306,
         user="root",
-        password=getpass.getpass("MySQL root 密码: "),
+        password=os.environ.get("DB_PASSWORD", "123456"),
         database="recruitment_ai",
         charset="utf8mb4",
     )
@@ -54,7 +54,16 @@ def import_csv_to_mysql(csv_path: str):
     placeholders = ", ".join(["%s"] * len(columns))
     sql = f"INSERT INTO job_listing ({', '.join(columns)}) VALUES ({placeholders})"
 
-    rows = [tuple(row) for row in df.itertuples(index=False)]
+    # 构建行列表，处理 NaN → None
+    rows = []
+    for row in df.itertuples(index=False):
+        clean = []
+        for v in row:
+            if pd.isna(v):
+                clean.append(None)
+            else:
+                clean.append(v)
+        rows.append(tuple(clean))
     cursor.executemany(sql, rows)
     conn.commit()
 
@@ -64,5 +73,5 @@ def import_csv_to_mysql(csv_path: str):
 
 
 if __name__ == "__main__":
-    csv_path = "../data/processed/智联招聘python工程师_cleaned.csv"
+    csv_path = "../data/processed/智联招聘java_python_C工程师_cleaned.csv"
     import_csv_to_mysql(csv_path)
