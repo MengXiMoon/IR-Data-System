@@ -87,6 +87,7 @@ mysql -u root -p < database/schema.sql
 cd python_ml
 nlp_env\Scripts\activate          # Windows
 # source nlp_env/bin/activate     # Linux / Mac
+set DB_PASSWORD=你的MySQL密码
 python ../database/import_data.py
 cd ..
 ```

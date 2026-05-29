@@ -73,5 +73,7 @@ def import_csv_to_mysql(csv_path: str):
 
 
 if __name__ == "__main__":
-    csv_path = "../data/processed/智联招聘java_python_C工程师_cleaned.csv"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    csv_path = os.path.join(project_root, "data", "processed", "智联招聘java_python_C工程师_cleaned.csv")
     import_csv_to_mysql(csv_path)
