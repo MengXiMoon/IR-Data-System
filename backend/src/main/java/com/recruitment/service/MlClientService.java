@@ -23,11 +23,39 @@ public class MlClientService {
         this.mlServiceUrl = mlServiceUrl;
     }
 
-    /** 调用 Python KMeans 聚类服务 */
+    /** 通过文本调用 KMeans 聚类 */
+    @SuppressWarnings("unchecked")
+    public List<Integer> predictClusterByText(List<String> texts) {
+        try {
+            String url = mlServiceUrl + "/cluster/predict";
+            Map<String, Object> body = Map.of("texts", texts);
+            Map<String, Object> resp = restTemplate.postForObject(url, body, Map.class);
+            if (resp != null && resp.containsKey("labels")) {
+                return (List<Integer>) resp.get("labels");
+            }
+            return Collections.emptyList();
+        } catch (Exception e) {
+            throw new RuntimeException("ML 聚类服务调用失败: " + e.getMessage());
+        }
+    }
+
+    /** 通过文本调用神经网络分类 */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> predictClassifyByText(List<String> texts) {
+        try {
+            String url = mlServiceUrl + "/classify/predict";
+            Map<String, Object> body = Map.of("texts", texts);
+            return restTemplate.postForObject(url, body, Map.class);
+        } catch (Exception e) {
+            throw new RuntimeException("ML 分类服务调用失败: " + e.getMessage());
+        }
+    }
+
+    /** 通过特征向量调用 KMeans 聚类（兼容旧版） */
     @SuppressWarnings("unchecked")
     public List<Integer> predictCluster(List<List<Double>> features) {
         try {
-            String url = mlServiceUrl + "/cluster/predict";
+            String url = mlServiceUrl + "/cluster/predict_features";
             Map<String, Object> body = Map.of("features", features);
             Map<String, Object> resp = restTemplate.postForObject(url, body, Map.class);
             if (resp != null && resp.containsKey("labels")) {
@@ -39,11 +67,11 @@ public class MlClientService {
         }
     }
 
-    /** 调用 Python 神经网络分类服务 */
+    /** 通过特征向量调用神经网络分类（兼容旧版） */
     @SuppressWarnings("unchecked")
     public Map<String, Object> predictClassify(List<List<Double>> features) {
         try {
-            String url = mlServiceUrl + "/classify/predict";
+            String url = mlServiceUrl + "/classify/predict_features";
             Map<String, Object> body = Map.of("features", features);
             return restTemplate.postForObject(url, body, Map.class);
         } catch (Exception e) {

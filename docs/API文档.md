@@ -300,17 +300,17 @@ Authorization: Bearer <token>
 
 **请求体：**
 ```json
-{
-  "features": [[0.12, 0.45, 0.78], [0.33, 0.21, 0.56]]
-}
+["Python Django MySQL 后端开发", "Java Spring Boot 微服务"]
 ```
+
+> 传入岗位技能描述文本列表，后端自动分词 → TF-IDF → 聚类
 
 **成功响应 (200)：**
 ```json
 {
   "code": 200,
   "message": "success",
-  "data": [0, 2]
+  "data": [2, 0]
 }
 ```
 
@@ -326,10 +326,10 @@ Authorization: Bearer <token>
 
 **请求体：**
 ```json
-{
-  "features": [[0.12, 0.45, 0.78]]
-}
+["Python Django MySQL 后端开发"]
 ```
+
+> 传入岗位技能描述文本列表，后端自动分词 → TF-IDF → 标准化 → 分类
 
 **成功响应 (200)：**
 ```json
@@ -342,6 +342,8 @@ Authorization: Bearer <token>
   }
 }
 ```
+
+> 注意：需先运行 notebook 训练模型，详见 docs/模型训练指南.md
 
 ---
 

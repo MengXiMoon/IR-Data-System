@@ -17,15 +17,15 @@ public class MlController {
         this.mlClientService = mlClientService;
     }
 
-    /** 调用 Python KMeans 聚类预测 */
+    /** 通过岗位描述文本进行聚类预测 */
     @PostMapping("/cluster")
-    public Result<List<Integer>> cluster(@RequestBody List<List<Double>> features) {
-        return Result.ok(mlClientService.predictCluster(features));
+    public Result<List<Integer>> cluster(@RequestBody List<String> texts) {
+        return Result.ok(mlClientService.predictClusterByText(texts));
     }
 
-    /** 调用 Python 神经网络分类预测 */
+    /** 通过岗位描述文本进行分类预测 */
     @PostMapping("/classify")
-    public Result<Map<String, Object>> classify(@RequestBody List<List<Double>> features) {
-        return Result.ok(mlClientService.predictClassify(features));
+    public Result<Map<String, Object>> classify(@RequestBody List<String> texts) {
+        return Result.ok(mlClientService.predictClassifyByText(texts));
     }
 }
