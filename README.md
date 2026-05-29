@@ -19,52 +19,123 @@ Vue 3 前端 (Vite)  →  Java Spring Boot 后端  →  MySQL 数据库
 
 ## 快速启动
 
+> 以下命令均以**项目根目录**（`IR-Data-System/`）为工作目录执行。
+
 ### 1. 环境准备
 
-- JDK 17+
-- Maven 3.9+
-- Node.js 20+
-- Python 3.12+
-- MySQL 8.0（需先建库）
+| 依赖 | 版本要求 | 说明 |
+|------|----------|------|
+| JDK | 17+ | 后端运行环境 |
+| Maven | 3.9+ | 后端构建工具 |
+| Node.js | 20+ | 前端运行环境（npm 自带） |
+| Python | 3.12+ | ML 推理服务 |
+| MySQL | 8.0 | 数据库，需提前安装并启动 |
 
-Python 虚拟环境（首次）：
-
+**克隆项目后，进入项目根目录：**
 ```bash
-python -m venv D:/编程程序/python/nlp_env
-D:/编程程序/python/nlp_env/Scripts/pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+cd IR-Data-System
 ```
 
-前端依赖（首次）：
+---
+
+**Python 虚拟环境（首次）**：
+
+在 `python_ml/` 下创建虚拟环境并安装 ML 服务依赖：
+
+```bash
+cd python_ml
+
+# 创建虚拟环境
+python -m venv nlp_env
+
+# 激活虚拟环境
+# Windows CMD / PowerShell:
+nlp_env\Scripts\activate
+# Linux / Mac:
+source nlp_env/bin/activate
+
+# 安装依赖
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+cd ..
+```
+
+> 如还需运行数据清洗、可视化或 Jupyter Notebook，额外安装完整依赖(根目录下执行以下命令)：
+> ```bash
+> pip install -r ../requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+> ```
+
+---
+
+**前端依赖（首次）**：
 
 ```bash
 cd app
 npm install
+cd ..
 ```
 
-建库（首次）：
+---
+
+**建库（首次）**：
 
 ```bash
+# 执行建表 SQL（git bash中执行）
 mysql -u root -p < database/schema.sql
-python database/import_data.py   # 导入清洗后的数据
+
+# 激活 Python 虚拟环境后导入清洗数据
+cd python_ml
+nlp_env\Scripts\activate          # Windows
+# source nlp_env/bin/activate     # Linux / Mac
+python ../database/import_data.py
+cd ..
 ```
+
+---
 
 ### 2. 启动 MySQL
 
 ```bash
-net start MySQL80    # 或确保服务已在运行
+# Windows
+net start MySQL80
+
+# Linux / Mac
+sudo systemctl start mysql
 ```
+
+---
 
 ### 3. 启动 Python ML 推理服务
 
 ```bash
 cd python_ml
-D:/编程程序/python/nlp_env/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+
+# 激活虚拟环境
+nlp_env\Scripts\activate          # Windows
+# source nlp_env/bin/activate     # Linux / Mac
+
+# 启动 FastAPI 服务（默认 8000 端口）
+uvicorn main:app --host 127.0.0.1 --port 8000
+
+cd ..
 ```
+
+---
 
 ### 4. 启动 Java 后端
 
-**Windows (Git Bash)：**
+**Windows（CMD / PowerShell）：**
+```cmd
+cd backend
+set DB_PASSWORD=你的MySQL密码
+set JWT_SECRET=一个至少32字符的随机密钥
+set OPENAI_API_KEY=你的大模型API_KEY
 
+mvn clean package -DskipTests
+java -jar target\recruitment-ai-1.0.0.jar
+```
+
+**Linux / Mac / Git Bash：**
 ```bash
 cd backend
 export DB_PASSWORD=你的MySQL密码
@@ -75,12 +146,23 @@ mvn clean package -DskipTests
 java -jar target/recruitment-ai-1.0.0.jar
 ```
 
+> **环境变量说明**：
+> | 变量 | 必填 | 说明 |
+> |------|------|------|
+> | `DB_PASSWORD` | 是 | MySQL root 密码 |
+> | `JWT_SECRET` | 是 | JWT 签名密钥，不少于 32 字符 |
+> | `OPENAI_API_KEY` | 否 | 不填则跳过 AI 客服模块，系统其余功能正常 |
+
+---
+
 ### 5. 启动 Vue 前端
 
 ```bash
 cd app
 npx vite --host 0.0.0.0 --port 5173
 ```
+
+---
 
 ### 6. 打开浏览器
 
