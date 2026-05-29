@@ -18,6 +18,10 @@ venv/
 # 环境变量（含 API Key）
 .env
 
+# Node
+app/node_modules/
+app/dist/
+
 # Maven 构建产物
 backend/target/
 
