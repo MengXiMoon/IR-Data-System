@@ -359,12 +359,13 @@ def save_processed(df: pd.DataFrame, output_path: str):
 
 if __name__ == "__main__":
     import sys
-
-    input_path = sys.argv[1] if len(sys.argv) > 1 else (
-        r"e:\ExploreDownloads\福州大学至诚学院\智能应用开发课程设计\IR-Data-System\data\raw\智联招聘java、python、C工程师.csv"
+    import os
+    _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    input_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+        _PROJECT_ROOT, "data", "raw", "智联招聘java、python、C工程师.csv"
     )
-    output_path = sys.argv[2] if len(sys.argv) > 2 else (
-        r"e:\ExploreDownloads\福州大学至诚学院\智能应用开发课程设计\IR-Data-System\data\processed\智联招聘java_python_C工程师_cleaned.csv"
+    output_path = sys.argv[2] if len(sys.argv) > 2 else os.path.join(
+        _PROJECT_ROOT, "data", "processed", "智联招聘java_python_C工程师_cleaned.csv"
     )
 
     result = clean_data(input_path)

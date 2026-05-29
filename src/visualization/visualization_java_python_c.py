@@ -1,13 +1,18 @@
 """Java/Python/C/C++ 工程师招聘数据可视化
 
-5个可视化角度:
-  1. 薪资分布分析 —— 整体薪资直方图 + 不同经验级别薪资箱线图
-  2. 城市地域分布 —— Top15城市岗位数量 + 热门城市区域分布
-  3. 企业类型与规模 —— 企业类型饼图 + 企业规模柱状图
-  4. 学历与经验要求 —— 学历分布 + 工作经验分布
-  5. 技能需求热词 —— 技能关键词词云 + Top20技能频次
-  6. 编程语言维度对比 —— Java/Python/C_C++岗位数量与薪资对比 (额外角度)
-  7. 行业分布 —— 所属行业 Top12 饼图 (额外角度)
+可视化角度（12个，涵盖多种图形类型）:
+  1.  薪资分布直方图+KDE —— 直方图 + 核密度估计曲线
+  2.  经验级别薪资箱线图 —— 箱线图 (Boxplot)
+  3.  经验×学历薪资热力图 —— 热力图 (Heatmap)
+  4.  城市×语言类别岗位数热力图 —— 热力图 (Heatmap)
+  5.  语言类别薪资小提琴图 —— 小提琴图 (Violin Plot)
+  6.  薪资范围散点图 —— 散点图 (Scatter Plot)
+  7.  城市语言堆叠柱状图 —— 堆叠柱状图 (Stacked Bar)
+  8.  学历分布环形图 —— 环形图 (Donut Chart)
+  9.  技能需求词云 —— 词云图 (Word Cloud)
+  10. Top20技能频次 —— 水平柱状图 (Horizontal Bar)
+  11. 编程语言维度对比 —— 分组柱状图 (Grouped Bar)
+  12. 行业分布环形图 —— 环形图 (Donut Chart)
 """
 
 import os
@@ -29,6 +34,16 @@ CHART_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "data", "processed", "charts"
 )
+
+EXP_ORDER = ["经验不限", "1年以下", "1-3年", "3-5年", "5-10年", "10年以上"]
+EDU_ORDER = ["学历不限", "初中及以下", "高中", "中专/中技", "大专", "本科", "硕士", "博士"]
+SIZE_ORDER = [
+    "20人以下", "20-99人", "100-299人", "300-499人",
+    "500-999人", "1000-9999人", "10000人以上",
+]
+LANG_ORDER = ["Java", "Python", "C_C++", "多语言", "其他"]
+LANG_LABELS = ["Java", "Python", "C/C++", "多语言", "其他"]
+LANG_COLORS = ["#f1ce63", "#4e79a7", "#e15759", "#76b7b2", "#af7aa1"]
 
 
 def _init_font():
@@ -70,158 +85,245 @@ def _save(fig, name):
 
 
 # ============================================================
-# 角度1: 薪资分布分析
+# 角度1: 薪资分布直方图 + KDE
 # ============================================================
 def plot_salary_distribution(df: pd.DataFrame):
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig, ax = plt.subplots(figsize=(12, 6))
     fp = _fp()
 
-    salaries = df["平均月薪"].dropna()
-    ax = axes[0]
-    ax.hist(salaries / 1000, bins=40, color="#4e79a7", edgecolor="white", alpha=0.85)
-    ax.set_xlabel("月薪（千元）", fontproperties=fp, fontsize=12)
-    ax.set_ylabel("岗位数量", fontproperties=fp, fontsize=12)
-    ax.set_title("Java/Python/C工程师薪资分布", fontproperties=fp, fontsize=14)
-    median_val = salaries.median() / 1000
-    mean_val = salaries.mean() / 1000
-    ax.axvline(median_val, color="red", linestyle="--",
-               label=f"中位数: {median_val:.1f}k")
-    ax.axvline(mean_val, color="orange", linestyle=":",
-               label=f"均值: {mean_val:.1f}k")
-    ax.legend(prop=fp)
+    salaries = df["平均月薪"].dropna() / 1000
+    ax.hist(salaries, bins=45, color="#4e79a7", edgecolor="white",
+            alpha=0.7, density=True, label="频率分布")
+    salaries.plot.kde(ax=ax, color="#e15759", linewidth=2.5, label="核密度估计")
 
-    ax = axes[1]
-    exp_cat = ["1年以下", "1-3年", "3-5年", "5-10年", "10年以上"]
-    box_data = []
-    labels_present = []
-    for e in exp_cat:
-        vals = df[df["工作经验"] == e]["平均月薪"].dropna()
-        if len(vals) > 0:
-            box_data.append(vals.values)
-            labels_present.append(e)
-    bp = ax.boxplot(box_data, labels=labels_present, patch_artist=True, showfliers=False)
-    palette = sns.color_palette("YlOrRd", len(box_data))
-    for patch, color in zip(bp["boxes"], palette):
-        patch.set_facecolor(color)
-    ax.set_xlabel("工作经验", fontproperties=fp, fontsize=12)
-    ax.set_ylabel("月薪（元）", fontproperties=fp, fontsize=12)
-    ax.set_title("不同经验级别薪资对比", fontproperties=fp, fontsize=14)
-    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{x/1000:.0f}k"))
+    median_val = salaries.median()
+    mean_val = salaries.mean()
+    ax.axvline(median_val, color="red", linestyle="--", linewidth=1.5,
+               label=f"中位数: {median_val:.1f}k")
+    ax.axvline(mean_val, color="orange", linestyle=":", linewidth=1.5,
+               label=f"均值: {mean_val:.1f}k")
+
+    ax.set_xlabel("月薪（千元）", fontproperties=fp, fontsize=12)
+    ax.set_ylabel("密度", fontproperties=fp, fontsize=12)
+    ax.set_title("Java/Python/C工程师薪资分布（直方图+KDE）", fontproperties=fp, fontsize=15)
+    ax.legend(prop=fp, fontsize=11)
 
     plt.tight_layout()
     _save(fig, "salary_distribution.png")
 
 
 # ============================================================
-# 角度2: 城市地域分布
+# 角度2: 经验级别薪资箱线图
 # ============================================================
-def plot_company_region(df: pd.DataFrame, top_n: int = 15):
-    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+def plot_salary_boxplot(df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(12, 6))
     fp = _fp()
 
-    ax = axes[0]
-    city_counts = df["城市"].value_counts().head(top_n)
-    colors_sorted = ["#e15759" if i == 0 else "#76b7b2" for i in range(len(city_counts))]
-    bars = ax.barh(range(len(city_counts)), city_counts.values, color=colors_sorted)
-    ax.set_yticks(range(len(city_counts)))
-    ax.set_yticklabels(city_counts.index, fontproperties=fp)
-    ax.set_xlabel("岗位数量", fontproperties=fp, fontsize=12)
-    ax.set_title("企业城市分布 Top15", fontproperties=fp, fontsize=14)
-    ax.invert_yaxis()
-    for bar, val in zip(bars, city_counts.values):
-        ax.text(bar.get_width() + 5, bar.get_y() + 0.35, str(val),
-                fontproperties=fp, va="center")
+    exp_cat = [e for e in EXP_ORDER if e in df["工作经验"].values]
+    box_data = [df[df["工作经验"] == e]["平均月薪"].dropna().values for e in exp_cat]
 
-    ax = axes[1]
-    top_city = city_counts.index[0]
-    top_city_data = df[df["城市"] == top_city]
-    district_counts = top_city_data["区域"].value_counts().head(10)
-    colors_pie = sns.color_palette("Set3", len(district_counts))
-    wedges, texts, autotexts = ax.pie(
-        district_counts.values, autopct="%1.1f%%", colors=colors_pie,
-    )
-    ax.legend(wedges, district_counts.index, title="区域",
-              loc="center left", bbox_to_anchor=(1, 0.5), prop=fp)
-    ax.set_title(f"{top_city}各区域岗位分布", fontproperties=fp, fontsize=14)
+    bp = ax.boxplot(box_data, labels=exp_cat, patch_artist=True, showfliers=False,
+                    widths=0.5, medianprops=dict(color="black", linewidth=2))
+    palette = sns.color_palette("YlOrRd", len(box_data))
+    for patch, color in zip(bp["boxes"], palette):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.85)
+
+    ax.set_xlabel("工作经验", fontproperties=fp, fontsize=12)
+    ax.set_ylabel("月薪（元）", fontproperties=fp, fontsize=12)
+    ax.set_title("不同经验级别薪资箱线图", fontproperties=fp, fontsize=15)
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{x/1000:.0f}k"))
+    ax.grid(axis="y", alpha=0.3)
 
     plt.tight_layout()
-    _save(fig, "company_region.png")
+    _save(fig, "salary_boxplot.png")
 
 
 # ============================================================
-# 角度3: 企业类型与规模
+# 角度3: 经验×学历薪资热力图
 # ============================================================
-def plot_company_type(df: pd.DataFrame):
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+def plot_exp_edu_heatmap(df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(10, 7))
     fp = _fp()
 
-    ax = axes[0]
-    type_counts = df["公司类型"].value_counts()
-    colors_t = sns.color_palette("Set2", len(type_counts))
-    wedges, texts, autotexts = ax.pie(
-        type_counts.values, autopct="%1.1f%%", colors=colors_t,
-    )
-    ax.legend(wedges, type_counts.index, title="企业类型",
-              loc="center left", bbox_to_anchor=(1, 0.5), prop=fp)
-    ax.set_title("企业类型分布", fontproperties=fp, fontsize=14)
+    valid = df.dropna(subset=["工作经验", "学历要求", "平均月薪"])
+    pivot = valid.groupby(["工作经验", "学历要求"])["平均月薪"].mean().reset_index()
+    pivot_table = pivot.pivot(index="工作经验", columns="学历要求", values="平均月薪")
 
-    ax = axes[1]
-    size_order = ["20人以下", "20-99人", "100-299人", "300-499人",
-                  "500-999人", "1000-9999人", "10000人以上"]
-    size_counts = df["公司规模"].value_counts()
-    available = [s for s in size_order if s in size_counts.index]
-    counts = [size_counts.get(s, 0) for s in available]
-    ax.barh(range(len(available)), counts,
-            color=sns.color_palette("viridis", len(available)))
-    ax.set_yticks(range(len(available)))
-    ax.set_yticklabels(available, fontproperties=fp)
-    ax.set_xlabel("岗位数量", fontproperties=fp, fontsize=12)
-    ax.set_title("企业规模分布", fontproperties=fp, fontsize=14)
-    ax.invert_yaxis()
+    exp_present = [e for e in EXP_ORDER if e in pivot_table.index]
+    edu_present = [e for e in EDU_ORDER if e in pivot_table.columns]
+    pivot_table = pivot_table.reindex(index=exp_present, columns=edu_present)
+
+    sns.heatmap(
+        pivot_table / 1000, annot=True, fmt=".1f", cmap="YlOrRd",
+        linewidths=0.8, linecolor="white", ax=ax,
+        cbar_kws={"label": "平均月薪（千元）"},
+    )
+    ax.set_xlabel("学历要求", fontproperties=fp, fontsize=12)
+    ax.set_ylabel("工作经验", fontproperties=fp, fontsize=12)
+    ax.set_title("经验×学历 平均薪资热力图（千元）", fontproperties=fp, fontsize=15)
+    ax.set_yticklabels(ax.get_yticklabels(), fontproperties=fp, rotation=0)
+    ax.set_xticklabels(ax.get_xticklabels(), fontproperties=fp, rotation=30, ha="right")
 
     plt.tight_layout()
-    _save(fig, "company_type.png")
+    _save(fig, "exp_edu_salary_heatmap.png")
 
 
 # ============================================================
-# 角度4: 学历与经验要求
+# 角度4: 城市×语言类别岗位数热力图
 # ============================================================
-def plot_education_requirements(df: pd.DataFrame):
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+def plot_city_lang_heatmap(df: pd.DataFrame, top_n: int = 12):
+    fig, ax = plt.subplots(figsize=(10, 8))
     fp = _fp()
 
-    ax = axes[0]
+    top_cities = df["城市"].value_counts().head(top_n).index.tolist()
+    subset = df[df["城市"].isin(top_cities)]
+    pivot = subset.groupby(["城市", "语言类别"]).size().reset_index(name="岗位数")
+    pivot_table = pivot.pivot(index="城市", columns="语言类别", values="岗位数").fillna(0)
+
+    city_order = [c for c in top_cities if c in pivot_table.index]
+    lang_present = [l for l in LANG_ORDER if l in pivot_table.columns]
+    pivot_table = pivot_table.reindex(index=city_order, columns=lang_present)
+
+    sns.heatmap(
+        pivot_table, annot=True, fmt=".0f", cmap="Blues",
+        linewidths=0.8, linecolor="white", ax=ax,
+        cbar_kws={"label": "岗位数量"},
+    )
+    ax.set_xlabel("语言类别", fontproperties=fp, fontsize=12)
+    ax.set_ylabel("城市", fontproperties=fp, fontsize=12)
+    ax.set_title("城市×语言类别 岗位数量热力图", fontproperties=fp, fontsize=15)
+    ax.set_yticklabels(ax.get_yticklabels(), fontproperties=fp, rotation=0)
+    lang_tick_labels = [LANG_LABELS[LANG_ORDER.index(l)] for l in lang_present]
+    ax.set_xticklabels(lang_tick_labels, fontproperties=fp, rotation=0)
+
+    plt.tight_layout()
+    _save(fig, "city_lang_heatmap.png")
+
+
+# ============================================================
+# 角度5: 语言类别薪资小提琴图
+# ============================================================
+def plot_salary_violin(df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    fp = _fp()
+
+    plot_df = df[df["语言类别"].isin(LANG_ORDER)].copy()
+    plot_df["薪资千元"] = plot_df["平均月薪"] / 1000
+
+    palette = dict(zip(LANG_ORDER, LANG_COLORS))
+    sns.violinplot(
+        data=plot_df, x="语言类别", y="薪资千元",
+        order=LANG_ORDER, palette=palette, inner="box",
+        cut=0, ax=ax, saturation=0.85,
+    )
+
+    ax.set_xticklabels(LANG_LABELS, fontproperties=fp, fontsize=11)
+    ax.set_xlabel("语言类别", fontproperties=fp, fontsize=12)
+    ax.set_ylabel("月薪（千元）", fontproperties=fp, fontsize=12)
+    ax.set_title("各语言类别薪资分布小提琴图", fontproperties=fp, fontsize=15)
+    ax.grid(axis="y", alpha=0.3)
+
+    plt.tight_layout()
+    _save(fig, "salary_violin.png")
+
+
+# ============================================================
+# 角度6: 薪资范围散点图
+# ============================================================
+def plot_salary_scatter(df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(12, 8))
+    fp = _fp()
+
+    valid = df.dropna(subset=["最低薪资", "最高薪资", "语言类别"])
+    valid = valid[valid["语言类别"].isin(LANG_ORDER)]
+
+    for lang, color, label in zip(LANG_ORDER, LANG_COLORS, LANG_LABELS):
+        subset = valid[valid["语言类别"] == lang]
+        ax.scatter(
+            subset["最低薪资"] / 1000, subset["最高薪资"] / 1000,
+            c=color, alpha=0.35, s=20, label=label, edgecolors="none",
+        )
+
+    max_val = max(valid["最高薪资"].max() / 1000, valid["最低薪资"].max() / 1000)
+    ax.plot([0, max_val], [0, max_val], "k--", alpha=0.3, linewidth=1, label="最低=最高")
+
+    ax.set_xlabel("最低月薪（千元）", fontproperties=fp, fontsize=12)
+    ax.set_ylabel("最高月薪（千元）", fontproperties=fp, fontsize=12)
+    ax.set_title("薪资范围散点图（最低 vs 最高月薪）", fontproperties=fp, fontsize=15)
+    ax.legend(prop=fp, fontsize=10, markerscale=2)
+    ax.grid(alpha=0.2)
+
+    plt.tight_layout()
+    _save(fig, "salary_scatter.png")
+
+
+# ============================================================
+# 角度7: 城市语言堆叠柱状图
+# ============================================================
+def plot_city_lang_stacked(df: pd.DataFrame, top_n: int = 10):
+    fig, ax = plt.subplots(figsize=(14, 7))
+    fp = _fp()
+
+    top_cities = df["城市"].value_counts().head(top_n).index.tolist()
+    subset = df[df["城市"].isin(top_cities)]
+
+    pivot = subset.groupby(["城市", "语言类别"]).size().reset_index(name="岗位数")
+    pivot_table = pivot.pivot(index="城市", columns="语言类别", values="岗位数").fillna(0)
+    city_order = sorted(top_cities, key=lambda c: pivot_table.loc[c].sum() if c in pivot_table.index else 0)
+    lang_present = [l for l in LANG_ORDER if l in pivot_table.columns]
+    pivot_table = pivot_table.reindex(index=city_order, columns=lang_present)
+
+    bottom = np.zeros(len(city_order))
+    for lang, color, label in zip(lang_present, LANG_COLORS, LANG_LABELS):
+        vals = pivot_table[lang].values
+        ax.barh(range(len(city_order)), vals, left=bottom, color=color,
+                label=label, edgecolor="white", linewidth=0.5)
+        bottom += vals
+
+    ax.set_yticks(range(len(city_order)))
+    ax.set_yticklabels(city_order, fontproperties=fp)
+    ax.set_xlabel("岗位数量", fontproperties=fp, fontsize=12)
+    ax.set_title(f"Top{top_n}城市各语言岗位堆叠柱状图", fontproperties=fp, fontsize=15)
+    ax.legend(prop=fp, fontsize=10, loc="lower right")
+
+    plt.tight_layout()
+    _save(fig, "city_lang_stacked.png")
+
+
+# ============================================================
+# 角度8: 学历分布环形图
+# ============================================================
+def plot_education_donut(df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(9, 9))
+    fp = _fp()
+
     edu_counts = df["学历要求"].value_counts()
-    colors_edu = sns.color_palette("Set3", len(edu_counts))
-    bars = ax.bar(range(len(edu_counts)), edu_counts.values,
-                  color=colors_edu, edgecolor="white")
-    ax.set_xticks(range(len(edu_counts)))
-    ax.set_xticklabels(edu_counts.index.astype(str), fontproperties=fp, rotation=20)
-    ax.set_ylabel("岗位数量", fontproperties=fp, fontsize=12)
-    ax.set_title("学历要求分布", fontproperties=fp, fontsize=14)
-    for bar, val in zip(bars, edu_counts.values):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 5, str(val),
-                ha="center", fontproperties=fp, fontsize=10)
+    edu_present = [e for e in EDU_ORDER if e in edu_counts.index]
+    counts = [edu_counts.get(e, 0) for e in edu_present]
 
-    ax = axes[1]
-    exp_counts = df["工作经验"].value_counts()
-    colors_exp = sns.color_palette("Set2", len(exp_counts))
-    bars = ax.bar(range(len(exp_counts)), exp_counts.values,
-                  color=colors_exp, edgecolor="white")
-    ax.set_xticks(range(len(exp_counts)))
-    ax.set_xticklabels(exp_counts.index.astype(str), fontproperties=fp, rotation=20)
-    ax.set_ylabel("岗位数量", fontproperties=fp, fontsize=12)
-    ax.set_title("工作经验要求分布", fontproperties=fp, fontsize=14)
-    for bar, val in zip(bars, exp_counts.values):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 5, str(val),
-                ha="center", fontproperties=fp, fontsize=10)
+    colors = sns.color_palette("Set2", len(edu_present))
+    wedges, texts, autotexts = ax.pie(
+        counts, labels=edu_present, autopct="%1.1f%%",
+        colors=colors, pctdistance=0.8,
+        wedgeprops=dict(width=0.45, edgecolor="white", linewidth=2),
+    )
+    for t in texts:
+        t.set_fontproperties(fp)
+        t.set_fontsize(11)
+    for t in autotexts:
+        t.set_fontsize(9)
+
+    ax.text(0, 0, f"共{sum(counts)}个\n岗位", ha="center", va="center",
+            fontproperties=fp, fontsize=16, fontweight="bold")
+    ax.set_title("学历要求分布环形图", fontproperties=fp, fontsize=15)
 
     plt.tight_layout()
-    _save(fig, "education_requirements.png")
+    _save(fig, "education_donut.png")
 
 
 # ============================================================
-# 角度5: 技能需求热词
+# 角度9: 技能需求词云
 # ============================================================
 def plot_skill_wordcloud(df: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(14, 7))
@@ -250,6 +352,9 @@ def plot_skill_wordcloud(df: pd.DataFrame):
     _save(fig, "skill_wordcloud.png")
 
 
+# ============================================================
+# 角度10: Top20技能频次
+# ============================================================
 def plot_top_skills(df: pd.DataFrame, top_n: int = 20):
     fig, ax = plt.subplots(figsize=(10, 8))
     fp = _fp()
@@ -276,22 +381,19 @@ def plot_top_skills(df: pd.DataFrame, top_n: int = 20):
 
 
 # ============================================================
-# 角度6: 编程语言维度对比
+# 角度11: 编程语言维度对比（分组柱状图）
 # ============================================================
 def plot_language_comparison(df: pd.DataFrame):
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     fp = _fp()
 
-    lang_order = ["Java", "Python", "C_C++", "多语言", "其他"]
-    lang_labels = ["Java", "Python", "C/C++", "多语言", "其他"]
+    lang_counts = df["语言类别"].value_counts()
+    counts = [lang_counts.get(l, 0) for l in LANG_ORDER]
 
     ax = axes[0]
-    lang_counts = df["语言类别"].value_counts()
-    counts = [lang_counts.get(l, 0) for l in lang_order]
-    colors = ["#f1ce63", "#4e79a7", "#e15759", "#76b7b2", "#af7aa1"]
-    bars = ax.bar(range(len(lang_order)), counts, color=colors, edgecolor="white")
-    ax.set_xticks(range(len(lang_order)))
-    ax.set_xticklabels(lang_labels, fontproperties=fp, fontsize=11)
+    bars = ax.bar(range(len(LANG_ORDER)), counts, color=LANG_COLORS, edgecolor="white", width=0.6)
+    ax.set_xticks(range(len(LANG_ORDER)))
+    ax.set_xticklabels(LANG_LABELS, fontproperties=fp, fontsize=11)
     ax.set_ylabel("岗位数量", fontproperties=fp, fontsize=12)
     ax.set_title("各语言岗位数量对比", fontproperties=fp, fontsize=14)
     for bar, val in zip(bars, counts):
@@ -300,13 +402,13 @@ def plot_language_comparison(df: pd.DataFrame):
 
     ax = axes[1]
     avg_salaries = []
-    for l in lang_order:
+    for l in LANG_ORDER:
         avg = df[df["语言类别"] == l]["平均月薪"].mean()
         avg_salaries.append(avg if not pd.isna(avg) else 0)
-    bars = ax.bar(range(len(lang_order)), [v / 1000 for v in avg_salaries],
-                  color=colors, edgecolor="white")
-    ax.set_xticks(range(len(lang_order)))
-    ax.set_xticklabels(lang_labels, fontproperties=fp, fontsize=11)
+    bars = ax.bar(range(len(LANG_ORDER)), [v / 1000 for v in avg_salaries],
+                  color=LANG_COLORS, edgecolor="white", width=0.6)
+    ax.set_xticks(range(len(LANG_ORDER)))
+    ax.set_xticklabels(LANG_LABELS, fontproperties=fp, fontsize=11)
     ax.set_ylabel("平均月薪（千元）", fontproperties=fp, fontsize=12)
     ax.set_title("各语言平均薪资对比", fontproperties=fp, fontsize=14)
     for bar, val in zip(bars, avg_salaries):
@@ -318,24 +420,32 @@ def plot_language_comparison(df: pd.DataFrame):
 
 
 # ============================================================
-# 角度7: 行业分布
+# 角度12: 行业分布环形图
 # ============================================================
-def plot_industry_distribution(df: pd.DataFrame):
-    fig, ax = plt.subplots(figsize=(10, 7))
+def plot_industry_donut(df: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(10, 10))
     fp = _fp()
 
     industry_counts = df["所属行业"].dropna().value_counts().head(12)
     colors_i = sns.color_palette("viridis", len(industry_counts))
+
     wedges, texts, autotexts = ax.pie(
-        industry_counts.values, autopct="%1.1f%%",
-        colors=colors_i, pctdistance=0.85,
+        industry_counts.values, labels=industry_counts.index, autopct="%1.1f%%",
+        colors=colors_i, pctdistance=0.8,
+        wedgeprops=dict(width=0.4, edgecolor="white", linewidth=2),
     )
-    ax.legend(wedges, industry_counts.index, title="行业",
-              loc="center left", bbox_to_anchor=(1, 0.5), prop=fp)
-    ax.set_title("所属行业分布 Top 12", fontproperties=fp, fontsize=14)
+    for t in texts:
+        t.set_fontproperties(fp)
+        t.set_fontsize(10)
+    for t in autotexts:
+        t.set_fontsize(8)
+
+    ax.text(0, 0, "行业\nTop12", ha="center", va="center",
+            fontproperties=fp, fontsize=16, fontweight="bold")
+    ax.set_title("所属行业分布环形图", fontproperties=fp, fontsize=15)
 
     plt.tight_layout()
-    _save(fig, "industry_distribution.png")
+    _save(fig, "industry_donut.png")
 
 
 # ============================================================
@@ -351,27 +461,41 @@ def run_all(csv_path: str):
     print(f"维度: {df.shape}")
     print()
 
-    print("[1/7] 薪资分布分析")
+    print("[1/12] 薪资分布直方图+KDE")
     plot_salary_distribution(df)
 
-    print("[2/7] 城市地域分布")
-    plot_company_region(df)
+    print("[2/12] 经验级别薪资箱线图")
+    plot_salary_boxplot(df)
 
-    print("[3/7] 企业类型与规模")
-    plot_company_type(df)
+    print("[3/12] 经验×学历薪资热力图")
+    plot_exp_edu_heatmap(df)
 
-    print("[4/7] 学历与经验要求")
-    plot_education_requirements(df)
+    print("[4/12] 城市×语言类别岗位数热力图")
+    plot_city_lang_heatmap(df)
 
-    print("[5/7] 技能需求热词")
+    print("[5/12] 语言类别薪资小提琴图")
+    plot_salary_violin(df)
+
+    print("[6/12] 薪资范围散点图")
+    plot_salary_scatter(df)
+
+    print("[7/12] 城市语言堆叠柱状图")
+    plot_city_lang_stacked(df)
+
+    print("[8/12] 学历分布环形图")
+    plot_education_donut(df)
+
+    print("[9/12] 技能需求词云")
     plot_skill_wordcloud(df)
+
+    print("[10/12] Top20技能频次")
     plot_top_skills(df)
 
-    print("[6/7] 编程语言维度对比")
+    print("[11/12] 编程语言维度对比")
     plot_language_comparison(df)
 
-    print("[7/7] 行业分布")
-    plot_industry_distribution(df)
+    print("[12/12] 行业分布环形图")
+    plot_industry_donut(df)
 
     print()
     print("=" * 60)
@@ -381,7 +505,8 @@ def run_all(csv_path: str):
 
 if __name__ == "__main__":
     import sys
-    csv_path = sys.argv[1] if len(sys.argv) > 1 else (
-        r"e:\code\program\IR-Data-System\data\processed\智联招聘java_python_C工程师_cleaned.csv"
+    _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    csv_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+        _PROJECT_ROOT, "data", "processed", "智联招聘java_python_C工程师_cleaned.csv"
     )
     run_all(csv_path)
