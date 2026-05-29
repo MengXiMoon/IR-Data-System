@@ -260,42 +260,58 @@ def _build_output_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df[output_cols]
 
 
+def _deduplicate_by_url(df: pd.DataFrame) -> pd.DataFrame:
+    """根据职位链接（URL）去重 —— 相同URL视为同一岗位，保留首次出现的记录"""
+    before = len(df)
+    df = df.drop_duplicates(subset=["职位链接"], keep="first")
+    after = len(df)
+    removed = before - after
+    if removed > 0:
+        print(f"  基于职位链接去重，删除重复行: {removed} 行")
+    else:
+        print(f"  未发现基于职位链接的重复数据")
+    return df
+
+
 def clean_data(filepath: str) -> pd.DataFrame:
     """执行完整数据清洗流程"""
     print("=" * 60)
     print("Java/Python/C/C++ 工程师招聘数据清洗")
     print("=" * 60)
 
-    print(f"\n[1/8] 加载原始数据: {filepath}")
+    print(f"\n[1/9] 加载原始数据: {filepath}")
     df = load_raw_data(filepath)
     print(f"  原始维度: {df.shape}")
 
-    print("\n[2/8] 修复列偏移")
+    print("\n[2/9] 基于职位链接(URL)去重")
+    df = _deduplicate_by_url(df)
+
+    print("\n[3/9] 修复列偏移")
     df = _fix_shifted_rows(df)
 
-    print("\n[3/8] 清洗企业类型与公司规模")
+    print("\n[4/9] 清洗企业类型与公司规模")
     df = _clean_company_type(df)
     df = _clean_company_size(df)
 
-    print("\n[4/8] 解析薪资 (含面议过滤)")
+    print("\n[5/9] 解析薪资 (含面议过滤)")
     before = len(df)
     df = _extract_salary(df)
     df = df[(df["平均月薪"] >= 500) & (df["平均月薪"] <= 200000)]
     after = len(df)
     print(f"  薪资过滤掉: {before - after} 行 (含面议/异常值)")
 
-    print("\n[5/8] 解析地区 -> 城市/区域")
+    print("\n[6/9] 解析地区 -> 城市/区域")
     df = _parse_location(df)
 
-    print("\n[6/8] 提取标签 + 编程语言归类")
+    print("\n[7/9] 提取标签 + 编程语言归类")
     df = _extract_tag(df)
     df = _categorize_language(df)
 
-    print("\n[7/8] 标准化工作经验与学历要求")
+    print("\n[8/9] 标准化工作经验与学历要求")
     df = _standardize_experience(df)
     df = _standardize_education(df)
 
-    print("\n[8/8] 构建输出列")
+    print("\n[9/9] 构建输出列")
     df = _build_output_columns(df)
     print(f"  最终维度: {df.shape}")
 
@@ -345,10 +361,10 @@ if __name__ == "__main__":
     import sys
 
     input_path = sys.argv[1] if len(sys.argv) > 1 else (
-        r"e:\code\program\IR-Data-System\data\raw\智联招聘java、python、C工程师.csv"
+        r"e:\ExploreDownloads\福州大学至诚学院\智能应用开发课程设计\IR-Data-System\data\raw\智联招聘java、python、C工程师.csv"
     )
     output_path = sys.argv[2] if len(sys.argv) > 2 else (
-        r"e:\code\program\IR-Data-System\data\processed\智联招聘java_python_C工程师_cleaned.csv"
+        r"e:\ExploreDownloads\福州大学至诚学院\智能应用开发课程设计\IR-Data-System\data\processed\智联招聘java_python_C工程师_cleaned.csv"
     )
 
     result = clean_data(input_path)
