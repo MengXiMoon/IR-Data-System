@@ -42,13 +42,12 @@ public class AiService {
         userMsg.setContent(message);
         chatHistoryMapper.insert(userMsg);
 
-        // 获取历史最近10轮对话作为上下文
+        // 获取历史最近10轮对话作为上下文（正序）
         List<ChatHistory> history = chatHistoryMapper.selectList(
                 new LambdaQueryWrapper<ChatHistory>()
                         .eq(ChatHistory::getSessionId, sessionId)
-                        .orderByDesc(ChatHistory::getCreatedAt)
+                        .orderByAsc(ChatHistory::getCreatedAt)
                         .last("LIMIT 20"));
-        history = history.reversed();
 
         // 构建多轮对话消息
         List<ChatMessage> messages = new ArrayList<>();
@@ -62,7 +61,7 @@ public class AiService {
         }
 
         // 调用 LLM（多轮对话）
-        String reply = chatModel.generate(messages).content().text();
+        String reply = chatModel.chat(messages).aiMessage().text();
 
         // 保存 AI 回复
         ChatHistory aiMsg = new ChatHistory();

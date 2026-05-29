@@ -37,7 +37,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public Result<?> handleRuntime(RuntimeException e) {
-        return Result.fail(e.getMessage());
+        return Result.fail(e.getMessage() != null ? e.getMessage() : e.getCause().getMessage());
     }
 
     @ExceptionHandler(Exception.class)
