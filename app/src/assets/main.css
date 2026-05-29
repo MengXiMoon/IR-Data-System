@@ -1,0 +1,67 @@
+:root {
+  --bg-primary: #f5f6fa;
+  --bg-secondary: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-sidebar: #f8f9fb;
+  --bg-hover: #eef0f5;
+  --gold-primary: #ffd700;
+  --gold-light: #fffacd;
+  --gold-bright: #ffff00;
+  --gold-gradient: linear-gradient(135deg, #ffd700, #ffff00);
+  --text-primary: #1a1a2e;
+  --text-secondary: #555;
+  --text-muted: #999;
+  --border-color: #e5e7eb;
+  --border-gold: rgba(255, 215, 0, 0.25);
+  --shadow-gold: 0 0 20px rgba(255, 215, 0, 0.08);
+  --sidebar-width: 240px;
+  --header-height: 0px;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  height: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+a {
+  color: var(--gold-primary);
+  text-decoration: none;
+}
